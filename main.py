@@ -1,5 +1,5 @@
-import tkinter, ttkbootstrap, json, threading, os, logging, dgpb, zipfile, subprocess, time, sys
-
+import tkinter, ttkbootstrap, json, os, logging, dgpb, zipfile, subprocess, time, sys
+import _thread as thread
 import ttkbootstrap.toast
 import tkinter.ttk as tk
 from tkinter import messagebox
@@ -21,7 +21,7 @@ def init(): # 初始化
     for libFolder in libFolders:
         if not os.path.isdir(lib+libFolder):
             os.makedirs(lib+libFolder)
-    libFiles = [["set.json","{}"],["cmcl.json",""]]  # 创建文件
+    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 1}"]]  # 创建文件
     for libFile in libFiles:
         if not os.path.isfile(lib+libFile[0]):
             with open(lib+libFile[0],"w") as f:
@@ -110,7 +110,7 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
         else:
             def downloadCommmand():
                 os.system(f"start {cmcl} install "+downloadMinecraftVersion+" -n L_"+downloadMinecraftVersion)
-            threading.Thread(target=downloadCommmand).start()
+            thread.start_new_thread(downloadCommmand, ())
             
     localPageDownloadPage = ttkbootstrap.Window("下载",size=(640,480),resizable=(0,0))
     yscroll = tk.Scrollbar(localPageDownloadPage, orient=tkinter.VERTICAL)
@@ -171,7 +171,7 @@ def guiLaunch():
             def launching():
                 os.system(f"{cmcl} -s {localPageLibrarySelect.get()} && {cmcl} version --isolate")
                 os.system(f"{cmcl} {localPageLibrarySelect.get()}")
-            threading.Thread(target=launching).start()
+            thread.start_new_thread(launching, ())
         except:
             messagebox.showerror("错误","启动时出现错误。")
 
@@ -226,8 +226,7 @@ def statusUpdateThread():
         updateLocalLoginStatus()
         localPageLibraryUpdate()
         time.sleep(5)
-statusUpdateThreading = threading.Thread(target=statusUpdateThread)
-statusUpdateThreading.start()
+thread.start_new_thread(statusUpdateThread, ())
 # Mainloop
 tab_main.add(homepage,text="主页")
 tab_main.add(localpage,text="本地游玩")
