@@ -1,17 +1,21 @@
-import tkinter, ttkbootstrap, json, threading, os, logging, dgpb, zipfile, subprocess
+import tkinter, ttkbootstrap, json, threading, os, logging, dgpb, zipfile, subprocess, time, sys
+
+import ttkbootstrap.toast
 import tkinter.ttk as tk
 from tkinter import messagebox
 from tkinter import simpledialog
+from ttkbootstrap.toast import ToastNotification
 
 def saveSettings(): # 保存设置
     with open(lib+"set.json","w") as f:
         f.write(json.dumps(settings))
 
 def init(): # 初始化
-    global lib,cmcl,settings
+    global lib,cmcl,settings,minecraft
     # 初始化资源文件夹
     lib = f"{os.getcwd()}\\library\\"
-    libFolders = ["downloads",".minecraft","mserver","downloads\\jre8","temp"]   # 创建文件夹
+    libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
+    minecraft = f"{os.getcwd()}\\.minecraft\\"
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
@@ -30,7 +34,7 @@ def init(): # 初始化
         settings["TheTipsStatus"] = True
         saveSettings()
     # 初始化日志模块
-    logging.basicConfig(level=logging.DEBUG,format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s (%(filename)s:%(lineno)d)",datefmt="%Y-%m-%d %H:%M:%S",filename=lib+"latest.log",filemode="w")
+    logging.basicConfig(level=logging.DEBUG,format="[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s (%(filename)s:%(lineno)d)",datefmt="%Y-%m-%d %H:%M:%S",filename=lib+"latest.log",filemode="w",encoding="utf-8")
     logging.info("初始化资源文件夹、日志模块完成。")
     logging.debug("设置："+str(settings))
     # 初始化启动器内核
@@ -57,6 +61,7 @@ def init(): # 初始化
         jrezip.extractall(lib+"downloads\\jdk21\\")
         jrezip.close()
         os.remove(lib+"temp\\jdk21.zip")
+    logging.info("初始化 Java 环境完成。")
 
 def accountClear(): # 清空所有账号
     with open(lib+"cmcl.json","r") as f:
@@ -94,50 +99,102 @@ def getDownloadableVersions(type="r"): # 获取可下载的版本号\
     global cmcl
     versions = subprocess.getoutput(f"{cmcl} install --show={type}")
     versions = versions.split(maxsplit=-1)[24:]
+    logging.debug(f"获取版本信息成功：【{type}】{str(versions)}")
     return versions
 def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
+    global versionList
+    def downloadMinecraft():
+        downloadMinecraftVersion = simpledialog.askstring("下载 Minecraft","请输入想要安装的版本：")
+        if not downloadMinecraftVersion in versionList:
+            messagebox.showerror("错误","没有找到此版本！已退出安装。")
+        else:
+            def downloadCommmand():
+                os.system(f"start {cmcl} install "+downloadMinecraftVersion+" -n L_"+downloadMinecraftVersion)
+            threading.Thread(target=downloadCommmand).start()
+            
     localPageDownloadPage = ttkbootstrap.Window("下载",size=(640,480),resizable=(0,0))
     yscroll = tk.Scrollbar(localPageDownloadPage, orient=tkinter.VERTICAL)
     table = tk.Treeview(
             master=localPageDownloadPage,
             height=10,
-            columns=["版本号","原版下载","Fabric 安装","Forge/NeoForge安装","Optifine 安装"],
+            columns=["版本号","adfgdfg","sdfgdfg","ddfgdfg","fdfgdfg"],
             show='headings',
             yscrollcommand=yscroll.set
             )
     yscroll.config(command=table.yview)
     yscroll.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-    table.heading(column='版本号', text='版本号', anchor='w',
+    table.heading(column='版本号', text='0', anchor='w',
                   command=lambda: print('版本号'))
-    table.heading('原版下载', text='原版下载', )
-    table.heading('Fabric 安装', text='Fabric 安装', )
-    table.heading('Forge/NeoForge安装', text='Forge/NeoForge安装', )
-    table.heading('Optifine 安装', text='Optifine 安装', )
-    table.column('原版下载', width=100, minwidth=100, anchor=tkinter.S, )
-    table.column('Fabric 安装', width=100, minwidth=100, anchor=tkinter.S)
-    table.column('Forge/NeoForge安装', width=100, minwidth=100, anchor=tkinter.S)
-    table.column('Optifine 安装', width=100, minwidth=100, anchor=tkinter.S)
+    table.heading('adfgdfg', text='1', )
+    table.heading('sdfgdfg', text='2', )
+    table.heading('ddfgdfg', text='3', )
+    table.heading('fdfgdfg', text='4', )
+    table.column('adfgdfg', width=100, minwidth=100, anchor=tkinter.S, )
+    table.column('sdfgdfg', width=100, minwidth=100, anchor=tkinter.S)
+    table.column('ddfgdfg', width=100, minwidth=100, anchor=tkinter.S)
+    table.column('fdfgdfg', width=100, minwidth=100, anchor=tkinter.S)
     table.pack()
     versionList = getDownloadableVersions("all")
+    if "HTTP" in versionList:
+        messagebox.showerror("错误","获取版本列表失败，请重试。")
+        localPageDownloadPage.destroy()
+        return None
     o = list()
     for i in versionList:
         if len(o) == 5:
             table.insert('', 0, values=[o[4],o[3],o[2],o[1],o[0]])
             o = list()
         o.append(i)
+    table.insert('', 0, values=o)
+    tk.Button(localPageDownloadPage,text="下载 Minecraft",command=downloadMinecraft).pack()
     localPageDownloadPage.mainloop()
+def guiLaunch():
+    global localPageLibrarySelect
+    if not localPageLibrarySelect.get() in library:
+        messagebox.showerror("错误","没有找到该版本")
+    else:
+        try:
+            logging.info("正在启动游戏。名称："+localPageLibrarySelect.get())
+            with open(f"{minecraft}versions\\{localPageLibrarySelect.get()}\\{localPageLibrarySelect.get()}.json","r") as f:
+                versionJson = json.loads(f.read())
+            if versionJson["javaVersion"]["majorVersion"] < 16:
+                javapath = f"{lib}downloads\\jre8\\bin\\java.exe"
+            elif versionJson["javaVersion"]["majorVersion"] < 20 and versionJson["javaVersion"]["majorVersion"] > 15:
+                javapath = f"{lib}downloads\\jdk17\\bin\\java.exe"
+            else:
+                javapath = f"{lib}downloads\\jdk21\\bin\\java.exe"
+            with open(f"{lib}cmcl.json","r") as f:
+                cmcljson = json.loads(f.read())
+            with open(f"{lib}cmcl.json","w") as f:
+                cmcljson["javaPath"] = javapath
+                f.write(json.dumps(cmcljson))
+            def launching():
+                os.system(f"{cmcl} -s {localPageLibrarySelect.get()} && {cmcl} version --isolate")
+                os.system(f"{cmcl} {localPageLibrarySelect.get()}")
+            threading.Thread(target=launching).start()
+        except:
+            messagebox.showerror("错误","启动时出现错误。")
+
 init()
+
+logging.info("初始化完成，正在加载图形界面。")
 # 窗口初始化
 window = ttkbootstrap.Window("易联坊客户端",size=(640,480),resizable=(0,0))
 tab_main=tk.Notebook(window,width=624,height=432)
 tab_main.place(x=8,y=8)
+def on_closing():
+    sys.exit()
+window.protocol("WM_DELETE_WINDOW", on_closing)
 # 主页
 homepage = tk.Frame(tab_main)
 # 离线模式
 localpage = tk.Frame(tab_main)
 localPageAccountStatusLabel = tk.Label(localpage,text="正在加载...")
 localPageAccountStatusLabel.grid(row=0,columnspan=15)
-localPageDownloadButton = tk.Button(localpage,text="下载 Minecraft",command=guiLocalpageDownloadButton).grid(row=1,column=0)
+tk.Button(localpage,text="下载",command=guiLocalpageDownloadButton).grid(row=1,column=0)
+localPageLibrarySelect = tk.Combobox(localpage)
+localPageLibrarySelect.grid(row=2,columnspan=15)
+tk.Button(localpage,text="启动",command=guiLaunch).grid(row=1,column=1)
 # 内容变化
 def updateLocalLoginStatus():
     accountInformation = accountGet()
@@ -154,8 +211,25 @@ def updateLocalLoginStatus():
         logoutButton = tk.Button(localpage,command=accountLogout,text="登出")
         logoutButton.grid(row=0, column=15)
     localpage.update()
-updateLocalLoginStatus()
+def localPageLibraryUpdate():
+    global localPageLibrarySelect,library
+    if os.path.exists(f"{minecraft}versions\\"):
+        library = os.listdir(f"{minecraft}versions\\")
+    else:
+        library = []
+    localPageLibrarySelect["values"] = library
+    if not len(library) == 0:
+        localPageLibrarySelect.current(0)
+    localpage.update()
+def statusUpdateThread():
+    while True:
+        updateLocalLoginStatus()
+        localPageLibraryUpdate()
+        time.sleep(5)
+statusUpdateThreading = threading.Thread(target=statusUpdateThread)
+statusUpdateThreading.start()
 # Mainloop
 tab_main.add(homepage,text="主页")
 tab_main.add(localpage,text="本地游玩")
+logging.info("图形界面加载完成")
 window.mainloop()

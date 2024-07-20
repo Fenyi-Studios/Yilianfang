@@ -1,14 +1,13 @@
 """
 Download with GUI Progress Bar .py
 """
-import os,ttkbootstrap,tkinter,requests,time, logging
+import os,ttkbootstrap,tkinter,requests,time
 import _thread as thread
 import tkinter.ttk as tk
 def dgpb(downloadUrl, save, text="无"):
     global downloadProgressBar,downloadProgressWindow
     downloadProgressWindow = ttkbootstrap.Window("下载进度",size=[320,240])
     tkinter.Label(downloadProgressWindow,text="下载文件： ..."+downloadUrl[-15:]).pack()
-    logging.info("Downloading file from "+downloadUrl)
     downloadProgressBar = tk.Progressbar(downloadProgressWindow,length=300,maximum=100)
     downloadProgressBar.pack()
     downloadProgressTips = tkinter.Label(downloadProgressWindow,text="正在请求内容...")
