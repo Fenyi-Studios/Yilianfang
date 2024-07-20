@@ -1,21 +1,20 @@
-import tkinter, ttkbootstrap, json, os, logging, dgpb, zipfile, subprocess, time, sys
+import tkinter, json, os, logging, dgpb, zipfile, subprocess, time, sys, requests
 import _thread as thread
-import ttkbootstrap.toast
 import tkinter.ttk as tk
 from tkinter import messagebox
 from tkinter import simpledialog
-from ttkbootstrap.toast import ToastNotification
 
 def saveSettings(): # 保存设置
     with open(lib+"set.json","w") as f:
         f.write(json.dumps(settings))
 
 def init(): # 初始化
-    global lib,cmcl,settings,minecraft
+    global lib,cmcl,settings,minecraft,fenyiServer
     # 初始化资源文件夹
     lib = f"{os.getcwd()}\\library\\"
     libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
     minecraft = f"{os.getcwd()}\\.minecraft\\"
+    fenyiServer = "http://kr-nc-bgp-1.ofalias.net:33608/"
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
@@ -39,24 +38,24 @@ def init(): # 初始化
     logging.debug("设置："+str(settings))
     # 初始化启动器内核
     if not os.path.isfile(lib+"cmcl.exe"):
-        dgpb.dgpb("https://github.com/MrShieh-X/console-minecraft-launcher/releases/download/2.2.1/cmcl.exe",lib+"cmcl.exe","启动器依赖项")
+        dgpb.dgpb("https://gh.idayer.com/https://github.com/MrShieh-X/console-minecraft-launcher/releases/download/2.2.1/cmcl.exe",lib+"cmcl.exe","启动器依赖项")
     logging.info("初始化启动器内核完成。")
     cmcl = lib+"cmcl.exe"
     # 初始化 Java 环境
     if not os.path.exists(lib+"downloads\\jre8\\bin\\java.exe"):
-        dgpb.dgpb("https://github.com/RuizeSun/ResourcesForElfClient/releases/download/1/8u421.zip",lib+"temp\\jre8.zip","Minecraft 1.17 以下版本依赖项")
+        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/1/8u421.zip",lib+"temp\\jre8.zip","Minecraft 1.17 以下版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jre8.zip")
         jrezip.extractall(lib+"downloads\\jre8\\")
         jrezip.close()
         os.remove(lib+"temp\\jre8.zip")
     if not os.path.exists(lib+"downloads\\jdk17\\bin\\java.exe"):
-        dgpb.dgpb("https://github.com/RuizeSun/ResourcesForElfClient/releases/download/2/jdk17_0_11.zip",lib+"temp\\jdk17.zip","Minecraft 1.17~1.20 版本依赖项")
+        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/2/jdk17_0_11.zip",lib+"temp\\jdk17.zip","Minecraft 1.17~1.20 版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jdk17.zip")
         jrezip.extractall(lib+"downloads\\jdk17\\")
         jrezip.close()
         os.remove(lib+"temp\\jdk17.zip")
     if not os.path.exists(lib+"downloads\\jdk21\\bin\\java.exe"):
-        dgpb.dgpb("https://github.com/RuizeSun/ResourcesForElfClient/releases/download/3/jdk21.zip",lib+"temp\\jdk21.zip","Minecraft 1.20 以上版本依赖项")
+        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/3/jdk21.zip",lib+"temp\\jdk21.zip","Minecraft 1.20 以上版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jdk21.zip")
         jrezip.extractall(lib+"downloads\\jdk21\\")
         jrezip.close()
@@ -95,6 +94,31 @@ def accountLogin(): # 按钮触发事件：登录
 def accountLogout(): # 按钮触发事件：登出
     accountClear()
     updateLocalLoginStatus()
+def accountFenyiLogin(): # 纷易账号登录
+    try:
+        fenyiAccountUsername = simpledialog.askstring("纷易登录","请输入您的纷易账号用户名：")
+        fenyiAccountPassword = simpledialog.askstring("纷易登录","请输入您的纷易账号密码：",show="*")
+        fenyiAccountRequest = requests.post(f"{fenyiServer}api/loginAPI_return.php",{"username":fenyiAccountUsername,"password":fenyiAccountPassword})
+        fenyiAccount = json.loads(fenyiAccountRequest.text)
+        if not fenyiAccount["code"] == "200":
+            messagebox.showwarning("警告","验证失败，请检查用户名或密码是否正确！")
+        else:
+            fenyiAccountPersonalContent = json.loads(requests.post(f"{fenyiServer}api/getPersonContentFromKey.php",{"key":fenyiAccount["personal_key"]}).text)
+            settings["FenyiAccount"]["key"] = fenyiAccount["personal_key"]
+            settings["FenyiAccount"]["status"] = "logined"
+            settings["FenyiAccount"]["username"] = fenyiAccountPersonalContent["name"]
+            settings["FenyiAccount"]["email"] = fenyiAccountPersonalContent["email"]
+            settings["FenyiAccount"]["id"] = fenyiAccountPersonalContent["id"]
+            saveSettings()
+        homePageFAccountStatus()
+    except:
+        messagebox.showerror("错误","无法登录纷易账号。")
+        logging.error("无法登录纷易账号，请求中出现问题。")
+        homePageFAccountStatus()
+def accountFenyiLogout(): # 纷易账号登出
+    settings["FenyiAccount"] = {"status":"unlogined"}
+    saveSettings()
+    homePageFAccountStatus()
 def getDownloadableVersions(type="r"): # 获取可下载的版本号\
     global cmcl
     versions = subprocess.getoutput(f"{cmcl} install --show={type}")
@@ -106,13 +130,16 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
     def downloadMinecraft():
         downloadMinecraftVersion = simpledialog.askstring("下载 Minecraft","请输入想要安装的版本：")
         if not downloadMinecraftVersion in versionList:
-            messagebox.showerror("错误","没有找到此版本！已退出安装。")
+            messagebox.showwarning("警告","没有找到此版本！已退出安装。")
         else:
             def downloadCommmand():
                 os.system(f"start {cmcl} install "+downloadMinecraftVersion+" -n L_"+downloadMinecraftVersion)
             thread.start_new_thread(downloadCommmand, ())
             
-    localPageDownloadPage = ttkbootstrap.Window("下载",size=(640,480),resizable=(0,0))
+    localPageDownloadPage = tkinter.Tk()
+    localPageDownloadPage.title("版本下载")
+    localPageDownloadPage.geometry("640x480")
+    localPageDownloadPage.resizable(0,0)
     yscroll = tk.Scrollbar(localPageDownloadPage, orient=tkinter.VERTICAL)
     table = tk.Treeview(
             master=localPageDownloadPage,
@@ -129,6 +156,7 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
     table.heading('sdfgdfg', text='2', )
     table.heading('ddfgdfg', text='3', )
     table.heading('fdfgdfg', text='4', )
+    table.column('版本号', width=100, minwidth=100, anchor=tkinter.S, )
     table.column('adfgdfg', width=100, minwidth=100, anchor=tkinter.S, )
     table.column('sdfgdfg', width=100, minwidth=100, anchor=tkinter.S)
     table.column('ddfgdfg', width=100, minwidth=100, anchor=tkinter.S)
@@ -137,6 +165,7 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
     versionList = getDownloadableVersions("all")
     if "HTTP" in versionList:
         messagebox.showerror("错误","获取版本列表失败，请重试。")
+        logging.error("获取版本列表失败，请求出现问题。")
         localPageDownloadPage.destroy()
         return None
     o = list()
@@ -148,10 +177,11 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
     table.insert('', 0, values=o)
     tk.Button(localPageDownloadPage,text="下载 Minecraft",command=downloadMinecraft).pack()
     localPageDownloadPage.mainloop()
-def guiLaunch():
+def guiLaunch(): # 图形化本地启动
     global localPageLibrarySelect
     if not localPageLibrarySelect.get() in library:
-        messagebox.showerror("错误","没有找到该版本")
+        messagebox.showwarning("警告","没有找到该版本")
+        
     else:
         try:
             logging.info("正在启动游戏。名称："+localPageLibrarySelect.get())
@@ -174,42 +204,51 @@ def guiLaunch():
             thread.start_new_thread(launching, ())
         except:
             messagebox.showerror("错误","启动时出现错误。")
+            logging.error("启动时出现问题。")
 
 init()
-
 logging.info("初始化完成，正在加载图形界面。")
+
 # 窗口初始化
-window = ttkbootstrap.Window("易联坊客户端",size=(640,480),resizable=(0,0))
+window = tkinter.Tk()
+window.geometry("640x480")
+window.title("易联坊客户端")
+window.resizable(0,0)
 tab_main=tk.Notebook(window,width=624,height=432)
 tab_main.place(x=8,y=8)
 def on_closing():
     sys.exit()
 window.protocol("WM_DELETE_WINDOW", on_closing)
+
 # 主页
 homepage = tk.Frame(tab_main)
+homePageFenyiAccountStatusLabel = tk.Label(homepage,text="正在加载...")
+homePageFenyiAccountStatusLabel.grid(row=0,columnspan=2)
+
 # 离线模式
 localpage = tk.Frame(tab_main)
 localPageAccountStatusLabel = tk.Label(localpage,text="正在加载...")
-localPageAccountStatusLabel.grid(row=0,columnspan=15)
+localPageAccountStatusLabel.grid(row=0,columnspan=2)
 tk.Button(localpage,text="下载",command=guiLocalpageDownloadButton).grid(row=1,column=0)
-localPageLibrarySelect = tk.Combobox(localpage)
-localPageLibrarySelect.grid(row=2,columnspan=15)
+localPageLibrarySelect = tk.Combobox(localpage,state="readonly")
+localPageLibrarySelect.grid(row=2,columnspan=2)
 tk.Button(localpage,text="启动",command=guiLaunch).grid(row=1,column=1)
+
 # 内容变化
 def updateLocalLoginStatus():
     accountInformation = accountGet()
     if accountInformation["loginMethod"] == -1:
         localPageAccountStatusLabel["text"] = "未登录"
         loginButton = tk.Button(localpage,command=accountLogin,text="登录")
-        loginButton.grid(row=0, column=15)
+        loginButton.grid(row=0, column=2)
     elif accountInformation["loginMethod"] == 0:
         localPageAccountStatusLabel["text"] = "离线登录："+accountInformation["playerName"]
         logoutButton = tk.Button(localpage,command=accountLogout,text="登出")
-        logoutButton.grid(row=0, column=15)
+        logoutButton.grid(row=0, column=2)
     else:
         localPageAccountStatusLabel["text"] = "微软登录："+accountInformation["playerName"]
         logoutButton = tk.Button(localpage,command=accountLogout,text="登出")
-        logoutButton.grid(row=0, column=15)
+        logoutButton.grid(row=0, column=2)
     localpage.update()
 def localPageLibraryUpdate():
     global localPageLibrarySelect,library
@@ -221,12 +260,38 @@ def localPageLibraryUpdate():
     if not len(library) == 0:
         localPageLibrarySelect.current(0)
     localpage.update()
+def homePageFAccountStatus():
+    global homePageFenyiAccountStatusLabel
+    if not "FenyiAccount" in settings:
+        settings["FenyiAccount"] = {"status":"unlogined"}
+        homePageFenyiAccountStatusLabel["text"] = "未登录"
+        loginButton = tk.Button(homepage,text="登录",command=accountFenyiLogin)
+        loginButton.grid(row=0,column=2)
+    else:
+        if settings["FenyiAccount"]["status"] == "unlogined":
+            homePageFenyiAccountStatusLabel["text"] = "未登录"
+            loginButton = tk.Button(homepage,text="登录",command=accountFenyiLogin)
+            tk.Button(homepage,command=lambda:os.system(f"start {fenyiServer}register.html"),text="注册").grid(row=0,column=3)
+            loginButton.grid(row=0,column=2)
+        else:
+            homePageFenyiAccountStatusLabel["text"] = settings["FenyiAccount"]["username"]
+            logoutButton = tk.Button(homepage,command=accountFenyiLogout,text="登出")
+            tk.Button(homepage,command=lambda:os.system(f"start {fenyiServer}register.html"),text="注册").grid(row=0,column=3)
+            logoutButton.grid(row=0, column=2)
+            tk.Button(homepage,command=lambda:os.system(f"start {fenyiServer}user/index.html"),text="用户中心").grid(row=0,column=3)
+    homepage.update()
+    saveSettings()
+    
+
+
 def statusUpdateThread():
     while True:
         updateLocalLoginStatus()
         localPageLibraryUpdate()
+        homePageFAccountStatus()
         time.sleep(5)
 thread.start_new_thread(statusUpdateThread, ())
+
 # Mainloop
 tab_main.add(homepage,text="主页")
 tab_main.add(localpage,text="本地游玩")
