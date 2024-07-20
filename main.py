@@ -95,26 +95,7 @@ def accountLogout(): # 按钮触发事件：登出
     accountClear()
     updateLocalLoginStatus()
 def accountFenyiLogin(): # 纷易账号登录
-    try:
-        fenyiAccountUsername = simpledialog.askstring("纷易登录","请输入您的纷易账号用户名：")
-        fenyiAccountPassword = simpledialog.askstring("纷易登录","请输入您的纷易账号密码：",show="*")
-        fenyiAccountRequest = requests.post(f"{fenyiServer}api/loginAPI_return.php",{"username":fenyiAccountUsername,"password":fenyiAccountPassword})
-        fenyiAccount = json.loads(fenyiAccountRequest.text)
-        if not fenyiAccount["code"] == "200":
-            messagebox.showwarning("警告","验证失败，请检查用户名或密码是否正确！")
-        else:
-            fenyiAccountPersonalContent = json.loads(requests.post(f"{fenyiServer}api/getPersonContentFromKey.php",{"key":fenyiAccount["personal_key"]}).text)
-            settings["FenyiAccount"]["key"] = fenyiAccount["personal_key"]
-            settings["FenyiAccount"]["status"] = "logined"
-            settings["FenyiAccount"]["username"] = fenyiAccountPersonalContent["name"]
-            settings["FenyiAccount"]["email"] = fenyiAccountPersonalContent["email"]
-            settings["FenyiAccount"]["id"] = fenyiAccountPersonalContent["id"]
-            saveSettings()
-        homePageFAccountStatus()
-    except:
-        messagebox.showerror("错误","无法登录纷易账号。")
-        logging.error("无法登录纷易账号，请求中出现问题。")
-        homePageFAccountStatus()
+    # 内部 API
 def accountFenyiLogout(): # 纷易账号登出
     settings["FenyiAccount"] = {"status":"unlogined"}
     saveSettings()
