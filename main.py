@@ -1,4 +1,4 @@
-import tkinter, json, os, logging, dgpb, zipfile, subprocess, time, sys, requests
+import tkinter, json, os, logging, dgpb, zipfile, subprocess, time, sys, requests, elf
 import _thread as thread
 import tkinter.ttk as tk
 from tkinter import messagebox
@@ -14,13 +14,13 @@ def init(): # 初始化
     lib = f"{os.getcwd()}\\library\\"
     libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
     minecraft = f"{os.getcwd()}\\.minecraft\\"
-    fenyiServer = "http://kr-nc-bgp-1.ofalias.net:33608/"
+    fenyiServer = "https://auth.fenserver.cn/"
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
         if not os.path.isdir(lib+libFolder):
             os.makedirs(lib+libFolder)
-    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 1}"]]  # 创建文件
+    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 0}"]]  # 创建文件
     for libFile in libFiles:
         if not os.path.isfile(lib+libFile[0]):
             with open(lib+libFile[0],"w") as f:
@@ -95,7 +95,26 @@ def accountLogout(): # 按钮触发事件：登出
     accountClear()
     updateLocalLoginStatus()
 def accountFenyiLogin(): # 纷易账号登录
-    # 内部 API
+    try:
+        fenyiAccountUsername = simpledialog.askstring("纷易登录","请输入您的纷易账号用户名：")
+        fenyiAccountPassword = simpledialog.askstring("纷易登录","请输入您的纷易账号密码：",show="*")
+        fenyiAccountRequest = requests.post(f"{fenyiServer}api/loginAPI_return.php",{"username":fenyiAccountUsername,"password":fenyiAccountPassword})
+        fenyiAccount = json.loads(fenyiAccountRequest.text)
+        if not fenyiAccount["code"] == "200":
+            messagebox.showwarning("警告","验证失败，请检查用户名或密码是否正确！")
+        else:
+            fenyiAccountPersonalContent = json.loads(requests.post(f"{fenyiServer}api/getPersonContentFromKey.php",{"key":fenyiAccount["personal_key"]}).text)
+            settings["FenyiAccount"]["key"] = fenyiAccount["personal_key"]
+            settings["FenyiAccount"]["status"] = "logined"
+            settings["FenyiAccount"]["username"] = fenyiAccountPersonalContent["name"]
+            settings["FenyiAccount"]["email"] = fenyiAccountPersonalContent["email"]
+            settings["FenyiAccount"]["id"] = fenyiAccountPersonalContent["id"]
+            saveSettings()
+        homePageFAccountStatus()
+    except:
+        messagebox.showerror("错误","无法登录纷易账号。")
+        logging.error("无法登录纷易账号，请求中出现问题。")
+        homePageFAccountStatus()
 def accountFenyiLogout(): # 纷易账号登出
     settings["FenyiAccount"] = {"status":"unlogined"}
     saveSettings()
@@ -187,6 +206,7 @@ def guiLaunch(): # 图形化本地启动
             messagebox.showerror("错误","启动时出现错误。")
             logging.error("启动时出现问题。")
 
+
 init()
 logging.info("初始化完成，正在加载图形界面。")
 
@@ -205,6 +225,7 @@ window.protocol("WM_DELETE_WINDOW", on_closing)
 homepage = tk.Frame(tab_main)
 homePageFenyiAccountStatusLabel = tk.Label(homepage,text="正在加载...")
 homePageFenyiAccountStatusLabel.grid(row=0,columnspan=2)
+tk.Button(homepage, text="进入123456",command=lambda:elf.Server(123456).installnStart()).grid(row=1,column=0)
 
 # 离线模式
 localpage = tk.Frame(tab_main)
@@ -262,8 +283,6 @@ def homePageFAccountStatus():
             tk.Button(homepage,command=lambda:os.system(f"start {fenyiServer}user/index.html"),text="用户中心").grid(row=0,column=3)
     homepage.update()
     saveSettings()
-    
-
 
 def statusUpdateThread():
     while True:
