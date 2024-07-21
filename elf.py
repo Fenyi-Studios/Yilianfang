@@ -14,9 +14,9 @@ cmcl = lib+"cmcl.exe"
 class Server:
     def __init__(self,serverId):
         self.serverId = serverId
-        #getServerInfoRequest = requests.post(f"{fenyiServer}eLFP/getServerInfo.php",{"serverID":self.serverId})
-        #self.serverInfo = json.loads(getServerInfoRequest.text)
-        self.serverInfo = json.loads('''{
+        getServerInfoRequest = requests.post(f"{fenyiServer}eLFP/getServerInfo.php",{"serverID":self.serverId})
+        self.serverInfo = json.loads(getServerInfoRequest.text)
+        """self.serverInfo = json.loads('''{
 	"serverID": 123456,
 	"gameInfo": {
 		"version": "1.21",
@@ -36,7 +36,7 @@ class Server:
 		"port": "11451",
 		"rules": "不要玩元神"
 	}
-    }''')
+    }''')"""
 
     def accountGet(): # 获取账号信息 # 等待易联坊API完成
         with open(lib+"cmcl.json","r") as f:
@@ -74,8 +74,8 @@ class Server:
         with open(f"{lib}temp\\elfclientinstall.cmd","w") as f:
             f.write("@echo off\ntitle 正在安装 Minecraft / Installing Minecraft\ncls\n")
             f.write(f"{cmcl} install {self.serverInfo["gameInfo"]["version"]} -n ELF-{str(self.serverInfo["serverID"])}\n{cmcl} -s ELF-{str(self.serverInfo["serverID"])}\n{cmcl} version --isolate\n")
-            #for i in self.serverInfo["gameInfo"]["mods"]:
-            #    dgpb.dgpb(i,f"{lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\{i.split("/")[-1]}")
+            for i in self.serverInfo["gameInfo"]["mods"]:
+                dgpb.dgpb(i,f"{lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\{i.split("/")[-1]}")
             if not self.serverInfo["gameInfo"]["modLoader"] == "None":
                 f.write(f"mkdir {minecraft}version\\ELF-{str(self.serverInfo["serverID"])}\\mods\\\n")
                 if self.serverInfo["gameInfo"]["modLoader"] == "Fabric":
