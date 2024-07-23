@@ -84,9 +84,10 @@ class Server:
             f.write(f"{cmcl} install {self.serverInfo["gameInfo"]["version"]} -n ELF-{str(self.serverInfo["serverID"])}\n{cmcl} -s ELF-{str(self.serverInfo["serverID"])}\n{cmcl} version --isolate\n")
             log.debug(self.serverInfo["gameInfo"]["mods"])
             for i in self.serverInfo["gameInfo"]["mods"]:
-                log.debug(i)
-                dgpb.dgpb(i,f"{lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\{i.split("/")[-1]}","模组")
-                log.debug("1")
+                if not i == "":
+                    log.debug(i)
+                    dgpb.dgpb(i,f"{lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\{i.split("/")[-1]}","模组")
+                    log.debug("1")
             if not self.serverInfo["gameInfo"]["modLoader"] == "None":
                 f.write(f"mkdir {minecraft}versions\\ELF-{str(self.serverInfo["serverID"])}\\mods\\\n")
                 if self.serverInfo["gameInfo"]["modLoader"] == "Fabric":
@@ -94,13 +95,14 @@ class Server:
                 if self.serverInfo["gameInfo"]["modLoader"] == "NForge":
                     f.write(f"{cmcl} version --forge={forgeVersions}\n")
                 f.write(f"move /Y {lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\*.jar {minecraft}versions\\ELF-{str(self.serverInfo["serverID"])}\\mods\\ \n{cmcl} ELF-{str(self.serverInfo["serverID"])}\n")
-            f.write(f"{cmcl} config qpServerAddress {self.serverInfo["serverInfo"]["ip"]}:{self.serverInfo["serverInfo"]["port"]}\n{cmcl} config delete=qpServerAddress")
+            f.write(f"{cmcl} config qpServerAddress {self.serverInfo["serverInfo"]["ip"]}:{self.serverInfo["serverInfo"]["port"]}\n{cmcl} config delete=qpServerAddress\nexit")
         os.system(f"start {lib}temp\\elfclientinstall.cmd")
     def start(self):
         if not self.isInstalled():
             raise RuntimeError("没有安装该服务器的客户端")
         with open(f"{lib}temp\\elfclientstart.cmd","w") as f:
-            f.write(f"@echo off\ntitle 正在启动 Minecraft / Launching Minecraft\ncls\n{cmcl} -s {self.serverInfo["serverID"]}\n{cmcl} --complete=assets\n{cmcl} --complete=libraries\n{cmcl} --complete=natives\n{cmcl}")
+            f.write(f"@echo off\ntitle 正在启动 Minecraft / Launching Minecraft\ncls\n{cmcl} -s ELF-{self.serverInfo["serverID"]}\n{cmcl} version --complete=assets\n{cmcl} version --complete=libraries\n{cmcl} version --complete=natives\n{cmcl}\n{cmcl} config delete=qpServerAddress\nexit")
+        os.system(f"start {lib}temp\\elfclientstart.cmd")
     def isInstalled(self):
         if f"ELF-{self.serverInfo["serverID"]}" in os.listdir(f"{minecraft}\\versions\\"):
             return True
