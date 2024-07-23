@@ -20,7 +20,7 @@ def init(): # 初始化
     for libFolder in libFolders:
         if not os.path.isdir(lib+libFolder):
             os.makedirs(lib+libFolder)
-    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 0}"]]  # 创建文件
+    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 0,\"exitWithMinecraft\": false,\"checkAccountBeforeStart\": false,\"printStartupInfo\": true}"]]  # 创建文件
     for libFile in libFiles:
         if not os.path.isfile(lib+libFile[0]):
             with open(lib+libFile[0],"w") as f:
@@ -81,7 +81,7 @@ def accountCreate(mode="ms",username="Steve"): # 创建账号
     os.system(f"{cmcl} account -s 0")
 def accountGet(): # 获取账号信息
     with open(lib+"cmcl.json","r") as f:
-        cmcljson = json.load(f)
+        cmcljson = json.loads(f.read())
     if "accounts" in cmcljson and not len(cmcljson["accounts"]) == 0:
         return {"loginMethod":cmcljson["accounts"][0]["loginMethod"],"playerName":cmcljson["accounts"][0]["playerName"]}
     else:
