@@ -43,6 +43,9 @@ class Server:
 	}
     }''')"""
 
+    def checkStatus(self):
+        return self.serverInfo["status"] == 200
+
     def accountGet(): # 获取账号信息 # 等待易联坊API完成
         with open(lib+"cmcl.json","r") as f:
             cmcljson = json.loads(f.read())

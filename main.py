@@ -207,7 +207,46 @@ def guiLaunch(): # 图形化本地启动
         except:
             messagebox.showerror("错误","启动时出现错误。")
             logging.error("启动时出现问题。")
-
+def elfPage(): # 联机页面
+    elfPage = tkinter.Toplevel(window)
+    yscroll = tk.Scrollbar(elfPage, orient=tkinter.VERTICAL)
+    table = tk.Treeview(
+            master=elfPage,
+            height=10,
+            columns=["房间ID","房间名称","房间简介","版本","正版认证","房间状态"],
+            show='headings',
+            yscrollcommand=yscroll.set
+            )
+    yscroll.config(command=table.yview)
+    yscroll.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+    table.heading(column='房间ID', text='房间ID', anchor='w')
+    table.heading('房间名称', text='房间名称', )
+    table.heading('房间简介', text='房间简介', )
+    table.heading('版本', text='版本', )
+    table.heading('正版认证', text='正版认证', )
+    table.heading('房间状态', text='房间状态', )
+    table.column('房间ID', width=100, minwidth=100, anchor=tkinter.S, )
+    table.column('房间名称', width=100, minwidth=100, anchor=tkinter.S, )
+    table.column('房间简介', width=100, minwidth=100, anchor=tkinter.S)
+    table.column('版本', width=100, minwidth=100, anchor=tkinter.S)
+    table.column('正版认证', width=100, minwidth=100, anchor=tkinter.S)
+    table.column('房间状态', width=100, minwidth=100, anchor=tkinter.S)
+    table.pack()
+    elfServerList = json.loads(requests.post(f"{fenyiServer}eLFP/getServerList.php",{"type":"all"}).text)
+    for i in elfServerList:
+        table.insert("", 0, values=[str(i["serverID"]),i["serverInfo"]["elfName"],i["serverInfo"]["elfDescription"][0:15],f"{i["gameInfo"]["version"]} {i["gameInfo"]["modLoader"]}",i["serverInfo"]["onlineMode"],i["serverInfo"]["status"]])
+    def joinServer():
+        serverID = simpledialog.askinteger("加入服务器","服务器ID：")
+        elfserver = elf.Server(serverID)
+        if not elfserver.checkStatus():
+            messagebox.showerror("错误","未找到该服务器。")
+            return None
+        if not elfserver.isInstalled():
+            elfserver.installnStart()
+        else:
+            elfserver.start()
+    tk.Button(elfPage,text="加入服务器",command=joinServer).pack()
+    elfPage.mainloop()
 
 init()
 logging.info("初始化完成，正在加载图形界面。")
@@ -227,7 +266,7 @@ window.protocol("WM_DELETE_WINDOW", on_closing)
 homepage = tk.Frame(tab_main)
 homePageFenyiAccountStatusLabel = tk.Label(homepage,text="正在加载...")
 homePageFenyiAccountStatusLabel.grid(row=0,columnspan=2)
-tk.Button(homepage, text="进入123456",command=lambda:elf.Server(1).installnStart()).grid(row=1,column=0)
+tk.Button(homepage, text="联机",command=elfPage).grid(row=1,column=0)
 
 # 离线模式
 localpage = tk.Frame(tab_main)
