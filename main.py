@@ -38,26 +38,27 @@ def init(): # 初始化
     logging.debug("设置："+str(settings))
     # 初始化启动器内核
     if not os.path.isfile(lib+"cmcl.exe"):
-        dgpb.dgpb("https://gh.idayer.com/https://github.com/MrShieh-X/console-minecraft-launcher/releases/download/2.2.1/cmcl.exe",lib+"cmcl.exe","启动器依赖项")
+        dgpb.dgpb("https://gh.llkk.cc/https://github.com/MrShieh-X/console-minecraft-launcher/releases/download/2.2.1/cmcl.exe",lib+"cmcl.exe","启动器依赖项")
     logging.info("初始化启动器内核完成。")
     cmcl = lib+"cmcl.exe"
     # 初始化 Java 环境
     if not os.path.exists(lib+"downloads\\jre8\\bin\\java.exe"):
-        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/1/8u421.zip",lib+"temp\\jre8.zip","Minecraft 1.17 以下版本依赖项")
+        dgpb.dgpb("https://gh.llkk.cc/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/1/8u421.zip",lib+"temp\\jre8.zip","Minecraft 1.17 以下版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jre8.zip")
         jrezip.extractall(lib+"downloads\\jre8\\")
         jrezip.close()
         os.remove(lib+"temp\\jre8.zip")
-        os.system(f"setx PATH \"%PATH%;{lib}\\downloads\\jre8\\bin\\\"")
+        if not "java" in subprocess.getoutput("echo %path%"):
+            os.system(f"setx PATH \"%PATH%;{lib}\\downloads\\jre8\\bin\\\" /m")
         os.system(f"set PATH=\"%PATH%;{lib}\\downloads\\jre8\\bin\\\"")
     if not os.path.exists(lib+"downloads\\jdk17\\bin\\java.exe"):
-        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/2/jdk17_0_11.zip",lib+"temp\\jdk17.zip","Minecraft 1.17~1.20 版本依赖项")
+        dgpb.dgpb("https://gh.llkk.cc/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/2/jdk17_0_11.zip",lib+"temp\\jdk17.zip","Minecraft 1.17~1.20 版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jdk17.zip")
         jrezip.extractall(lib+"downloads\\jdk17\\")
         jrezip.close()
         os.remove(lib+"temp\\jdk17.zip")
     if not os.path.exists(lib+"downloads\\jdk21\\bin\\java.exe"):
-        dgpb.dgpb("https://gh.idayer.com/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/3/jdk21.zip",lib+"temp\\jdk21.zip","Minecraft 1.20 以上版本依赖项")
+        dgpb.dgpb("https://gh.llkk.cc/https://github.com/RuizeSun/ResourcesForElfClient/releases/download/3/jdk21.zip",lib+"temp\\jdk21.zip","Minecraft 1.20 以上版本依赖项")
         jrezip = zipfile.ZipFile(lib+"temp\\jdk21.zip")
         jrezip.extractall(lib+"downloads\\jdk21\\")
         jrezip.close()
