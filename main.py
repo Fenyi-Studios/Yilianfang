@@ -9,12 +9,13 @@ def saveSettings(): # 保存设置
         f.write(json.dumps(settings))
 
 def init(): # 初始化
-    global lib,cmcl,settings,minecraft,fenyiServer
+    global lib,cmcl,settings,minecraft,fenyiServer,isServerOpening,dVersion
     # 初始化资源文件夹
     lib = f"{os.getcwd()}\\library\\"
     libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
     minecraft = f"{os.getcwd()}\\.minecraft\\"
     fenyiServer = "https://auth.fenserver.cn/"
+    dVersion = {"betaCode":["d1018b",101801],"releaseCode":"1.0.0","type":"预先发布版"}
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
@@ -64,6 +65,15 @@ def init(): # 初始化
         jrezip.close()
         os.remove(lib+"temp\\jdk21.zip")
     logging.info("初始化 Java 环境完成。")
+    # 检测服务器是否可用
+    try:
+        serverCheck = requests.get(f"{fenyiServer}eLFP/getServerInfo.php")
+        if serverCheck.status_code == 200:
+            isServerOpening = True
+        else:
+            isServerOpening = False
+    except:
+        isServerOpening = False
 
 def accountClear(): # 清空所有账号
     with open(lib+"cmcl.json","r") as f:
@@ -264,12 +274,14 @@ def on_closing():
 window.protocol("WM_DELETE_WINDOW", on_closing)
 
 # 主页
-homepage = tk.Frame(tab_main)
-homePageFenyiAccountStatusLabel = tk.Label(homepage,text="正在加载...")
-homePageFenyiAccountStatusLabel.grid(row=0,columnspan=2)
-tk.Button(homepage, text="联机",command=elfPage).grid(row=1,column=0)
+if isServerOpening:
+    homepage = tk.Frame(tab_main)
+    homePageFenyiAccountStatusLabel = tk.Label(homepage,text="正在加载...")
+    homePageFenyiAccountStatusLabel.grid(row=0,columnspan=2)
+    tk.Button(homepage, text="联机",command=elfPage).grid(row=1,column=0)
+    tab_main.add(homepage,text="主页")
 
-# 离线模式
+# 本地游戏界面
 localpage = tk.Frame(tab_main)
 localPageAccountStatusLabel = tk.Label(localpage,text="正在加载...")
 localPageAccountStatusLabel.grid(row=0,columnspan=2)
@@ -277,9 +289,16 @@ tk.Button(localpage,text="下载",command=guiLocalpageDownloadButton).grid(row=1
 localPageLibrarySelect = tk.Combobox(localpage,state="readonly")
 localPageLibrarySelect.grid(row=2,columnspan=2)
 tk.Button(localpage,text="启动",command=guiLaunch).grid(row=1,column=1)
+tab_main.add(localpage,text="本地游玩")
+
+# 关于
+aboutpage = tk.Frame(tab_main)
+tk.Label(aboutpage,text=f"易联坊启动器 \n{dVersion["type"]} {dVersion['releaseCode']}-{dVersion['betaCode'][0]}",font="SimHei 24").pack()
+tk.Label(aboutpage,text="启动器内核使用了 ConsoleMinecraftLauncher。").pack()
+tab_main.add(aboutpage,text="关于")
 
 # 内容变化
-def updateLocalLoginStatus():
+def updateLocalLoginStatus(): # 本地游戏登录状态更新
     accountInformation = accountGet()
     if accountInformation["loginMethod"] == -1:
         localPageAccountStatusLabel["text"] = "未登录"
@@ -294,7 +313,7 @@ def updateLocalLoginStatus():
         logoutButton = tk.Button(localpage,command=accountLogout,text="登出")
         logoutButton.grid(row=0, column=2)
     localpage.update()
-def localPageLibraryUpdate():
+def localPageLibraryUpdate(): # 本地页面游戏版本更新
     global localPageLibrarySelect,library
     if os.path.exists(f"{minecraft}versions\\"):
         library = os.listdir(f"{minecraft}versions\\")
@@ -304,7 +323,7 @@ def localPageLibraryUpdate():
     if not len(library) == 0:
         localPageLibrarySelect.current(0)
     localpage.update()
-def homePageFAccountStatus():
+def homePageFAccountStatus(): # 主页纷易登录状态更新
     global homePageFenyiAccountStatusLabel
     if not "FenyiAccount" in settings:
         settings["FenyiAccount"] = {"status":"unlogined"}
@@ -330,12 +349,12 @@ def statusUpdateThread():
     while True:
         updateLocalLoginStatus()
         localPageLibraryUpdate()
-        homePageFAccountStatus()
+
+        if isServerOpening:
+            homePageFAccountStatus()
         time.sleep(5)
 thread.start_new_thread(statusUpdateThread, ())
 
 # Mainloop
-tab_main.add(homepage,text="主页")
-tab_main.add(localpage,text="本地游玩")
 logging.info("图形界面加载完成")
 window.mainloop()

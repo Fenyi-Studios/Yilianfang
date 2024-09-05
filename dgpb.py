@@ -20,7 +20,7 @@ def dgpb(downloadUrl, save, text="无"):
     tkinter.Label(downloadProgressWindow,text="请勿关闭程序").pack()
     def download(downloadUrl,save):
         global downloadProgressBar,downloadProgressWindow
-        log.debug(f"正在下载，下载 URL 为 {downloadUrl} ，保存至 {save} ，窗口中备注为 {text} 的文件。")
+        log.debug(f"正在下载 URL 为 {downloadUrl} 的文件（保存至 {save} ，窗口中备注为 {text} ） 。")
         response = requests.get(downloadUrl, stream=True)
         size = 0
         chunk_size = 512288

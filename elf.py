@@ -97,13 +97,15 @@ class Server:
                 f.write(f"move /Y {lib}temp\\MODS_{str(self.serverInfo["serverID"])}\\*.jar {minecraft}versions\\ELF-{str(self.serverInfo["serverID"])}\\mods\\ \n{cmcl} ELF-{str(self.serverInfo["serverID"])}\n")
             f.write(f"{cmcl} version --config=qpServerAddress {self.serverInfo["serverInfo"]["ip"]}:{self.serverInfo["serverInfo"]["port"]}\nexit") 
         os.system(f"start {lib}temp\\elfclientinstall.cmd")
-    def start(self):
+    
+    def start(self): # 单独启动
         if not self.isInstalled():
             raise RuntimeError("没有安装该服务器的客户端")
         with open(f"{lib}temp\\elfclientstart.cmd","w") as f:
             f.write(f"@echo off\ntitle 正在启动 Minecraft / Launching Minecraft\ncls\n{cmcl} -s ELF-{self.serverInfo["serverID"]}\n{cmcl} version --complete=assets\n{cmcl} version --complete=libraries\n{cmcl} version --complete=natives\n{cmcl}\nexit")
         os.system(f"start {lib}temp\\elfclientstart.cmd")
-    def isInstalled(self):
+    
+    def isInstalled(self): # 是否有安装此版本
         if f"ELF-{self.serverInfo["serverID"]}" in os.listdir(f"{minecraft}\\versions\\"):
             return True
         else:
