@@ -7,21 +7,31 @@ from tkinter import simpledialog
 def saveSettings(): # 保存设置
     with open(lib+"set.json","w") as f:
         f.write(json.dumps(settings))
+def getSettings(key): # 获取设置
+    if key in settings:
+        return settings[key]
+    else:
+        defaultSettings = json.loads(libFiles[0][1])
+        if key in defaultSettings:
+            settings[key] = defaultSettings[key]
+            return settings[key]
+        else:
+            return None
 
 def init(): # 初始化
-    global lib,cmcl,settings,minecraft,fenyiServer,isServerOpening,dVersion
+    global lib,cmcl,settings,minecraft,fenyiServer,isServerOpening,dVersion,libFiles
     # 初始化资源文件夹
     lib = f"{os.getcwd()}\\library\\"
     libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
     minecraft = f"{os.getcwd()}\\.minecraft\\"
     fenyiServer = "https://auth.fenserver.cn/"
-    dVersion = {"betaCode":["d1062c",101803],"releaseCode":"1.0.0","type":"预先发布版"}
+    dVersion = {"betaCode":["d1063a",106301],"releaseCode":"1.0.0","type":"预先发布版"}
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
         if not os.path.isdir(lib+libFolder):
             os.makedirs(lib+libFolder)
-    libFiles = [["set.json","{}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 0,\"exitWithMinecraft\": false,\"checkAccountBeforeStart\": false,\"printStartupInfo\": true}"]]  # 创建文件
+    libFiles = [["set.json","{\"lastReadAnnouncement\":1}"],["cmcl.json","{\"language\": \"zh\",\"downloadSource\": 0,\"exitWithMinecraft\": false,\"checkAccountBeforeStart\": false,\"printStartupInfo\": true}"]]  # 创建文件
     for libFile in libFiles:
         if not os.path.isfile(lib+libFile[0]):
             with open(lib+libFile[0],"w") as f:
@@ -141,12 +151,22 @@ def getDownloadableVersions(type="r"): # 获取可下载的版本号\
 def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
     global versionList
     def downloadMinecraft():
-        downloadMinecraftVersion = simpledialog.askstring("下载 Minecraft","请输入想要安装的版本：")
+        downloadMinecraftVersion = simpledialog.askstring("下载 Minecraft","Minecraft 版本：")
+        downloadMinecraftVersionName = simpledialog.askstring("下载 Minecraft","版本名称：")
+        if downloadMinecraftVersionName in library:
+            messagebox.showerror("错误","该版本已存在。")
+            return None
+        if " " in downloadMinecraftVersionName:
+            messagebox.showerror("错误","版本名称不能包含空格。")
+            return None
+        if "ELF-" in downloadMinecraftVersionName:
+            messagebox.showerror("错误","版本名称无法使用。")
+            return None
         if not downloadMinecraftVersion in versionList:
-            messagebox.showwarning("警告","没有找到此版本！已退出安装。")
+            messagebox.showerror("错误","没有找到此版本！已退出安装。")
         else:
             def downloadCommmand():
-                os.system(f"start {cmcl} install "+downloadMinecraftVersion+" -n L_"+downloadMinecraftVersion)
+                os.system(f"start {cmcl} install "+downloadMinecraftVersion+" -n "+downloadMinecraftVersionName)
             thread.start_new_thread(downloadCommmand, ())
             
     localPageDownloadPage = tkinter.Tk()
@@ -193,31 +213,33 @@ def guiLocalpageDownloadButton(): # 本地游玩下载按钮触发事件
 def guiLaunch(): # 图形化本地启动
     global localPageLibrarySelect
     if not localPageLibrarySelect.get() in library:
-        messagebox.showwarning("警告","没有找到该版本")
-        
-    else:
-        try:
-            logging.info("正在启动游戏。名称："+localPageLibrarySelect.get())
-            with open(f"{minecraft}versions\\{localPageLibrarySelect.get()}\\{localPageLibrarySelect.get()}.json","r") as f:
-                versionJson = json.loads(f.read())
-            if versionJson["javaVersion"]["majorVersion"] < 16:
-                javapath = f"{lib}downloads\\jre8\\bin\\java.exe"
-            elif versionJson["javaVersion"]["majorVersion"] < 20 and versionJson["javaVersion"]["majorVersion"] > 15:
-                javapath = f"{lib}downloads\\jdk17\\bin\\java.exe"
-            else:
-                javapath = f"{lib}downloads\\jdk21\\bin\\java.exe"
-            with open(f"{lib}cmcl.json","r") as f:
-                cmcljson = json.loads(f.read())
-            with open(f"{lib}cmcl.json","w") as f:
-                cmcljson["javaPath"] = javapath
-                f.write(json.dumps(cmcljson))
-            def launching():
-                os.system(f"{cmcl} -s {localPageLibrarySelect.get()} && {cmcl} version --isolate")
-                os.system(f"{cmcl} {localPageLibrarySelect.get()}")
-            thread.start_new_thread(launching, ())
-        except:
-            messagebox.showerror("错误","启动时出现错误。")
-            logging.error("启动时出现问题。")
+        messagebox.showerror("错误","没有找到该版本！")
+        return None
+    if "ELF-" in localPageLibrarySelect.get():
+        if not messagebox.askyesno("警告","你正在启动的版本是易联坊联机客户端，不使用联机模块启动可能引起错误！"):
+            return None
+    try:
+        logging.info("正在启动游戏。名称："+localPageLibrarySelect.get())
+        with open(f"{minecraft}versions\\{localPageLibrarySelect.get()}\\{localPageLibrarySelect.get()}.json","r") as f:
+            versionJson = json.loads(f.read())
+        if versionJson["javaVersion"]["majorVersion"] < 16:
+            javapath = f"{lib}downloads\\jre8\\bin\\java.exe"
+        elif versionJson["javaVersion"]["majorVersion"] < 20 and versionJson["javaVersion"]["majorVersion"] > 15:
+            javapath = f"{lib}downloads\\jdk17\\bin\\java.exe"
+        else:
+            javapath = f"{lib}downloads\\jdk21\\bin\\java.exe"
+        with open(f"{lib}cmcl.json","r") as f:
+            cmcljson = json.loads(f.read())
+        with open(f"{lib}cmcl.json","w") as f:
+            cmcljson["javaPath"] = javapath
+            f.write(json.dumps(cmcljson))
+        def launching():
+            os.system(f"{cmcl} -s {localPageLibrarySelect.get()} && {cmcl} version --isolate")
+            os.system(f"{cmcl} {localPageLibrarySelect.get()}")
+        thread.start_new_thread(launching, ())
+    except:
+        messagebox.showerror("错误","启动时出现错误。")
+        logging.error("启动时出现问题。")
 def elfPage(): # 联机页面
     elfPage = tkinter.Toplevel(window)
     yscroll = tk.Scrollbar(elfPage, orient=tkinter.VERTICAL)
@@ -294,16 +316,29 @@ tab_main.add(localpage,text="本地游玩")
 # 关于
 aboutpage = tk.Frame(tab_main)
 tk.Label(aboutpage,text=f"易联坊启动器 \n{dVersion["type"]} {dVersion['releaseCode']}-{dVersion['betaCode'][0]}",font="SimHei 24").pack()
-tk.Label(aboutpage,text="启动器内核使用了 ConsoleMinecraftLauncher。").pack()
+tk.Label(aboutpage,text="启动器使用了 ConsoleMinecraftLauncher 作为内核。").pack()
 tab_main.add(aboutpage,text="关于")
 
 # 公告提示
 def announcement():
     try:
-        announcementInfo = requests.get("https://ruizesun.github.io/ResourcesForElfClient/announcement").text
+        announcementInfo = json.loads(requests.get("https://ruizesun.github.io/ResourcesForElfClient/announcement.json").text) 
     except:
-        announcementInfo = "获取公告失败"
-    messagebox.showinfo("公告",announcementInfo)
+        announcementInfo = {"type":"INFO","version":-1,"releaseTime":0,"title":"获取公告失败","text":"获取公告失败，请检查网络环境。"}
+    if not announcementInfo["version"] == -1:
+        lra = getSettings("lastReadAnnouncement")
+        if int(lra) >= int(announcementInfo["version"]):
+            return None
+    if announcementInfo["type"] == "PRIMARY":
+        messagebox.showinfo(f"【严重警告】{announcementInfo["title"]}",f"{announcementInfo["text"]}\n————————————————————此严重警告编辑于 {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(announcementInfo["releaseTime"]))} #{announcementInfo["version"]}")
+    elif announcementInfo["type"] == "WARNING":
+        messagebox.showinfo(f"【警告】{announcementInfo["title"]}",f"{announcementInfo["text"]}\n————————————————————此警告编辑于 {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(announcementInfo["releaseTime"]))} #{announcementInfo["version"]}")
+    else:
+        messagebox.showinfo(f"【公告】{announcementInfo["title"]}",f"{announcementInfo["text"]}\n————————————————————此公告编辑于 {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(announcementInfo["releaseTime"]))} #{announcementInfo["version"]}")
+    if not announcementInfo["version"] == -1:
+        settings["lastReadAnnouncement"] = announcementInfo["version"]
+        saveSettings()
+    
 thread.start_new_thread(announcement,())
 
 # 内容变化
@@ -358,7 +393,6 @@ def statusUpdateThread():
     while True:
         updateLocalLoginStatus()
         localPageLibraryUpdate()
-
         if isServerOpening:
             homePageFAccountStatus()
         time.sleep(5)
