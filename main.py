@@ -15,7 +15,7 @@ def init(): # 初始化
     libFolders = ["downloads","mserver","downloads\\jre8","temp"]   # 创建文件夹
     minecraft = f"{os.getcwd()}\\.minecraft\\"
     fenyiServer = "https://auth.fenserver.cn/"
-    dVersion = {"betaCode":["d1018b",101801],"releaseCode":"1.0.0","type":"预先发布版"}
+    dVersion = {"betaCode":["d1062c",101803],"releaseCode":"1.0.0","type":"预先发布版"}
     if not os.path.isdir(lib):
         os.makedirs(lib)
     for libFolder in libFolders:
@@ -296,6 +296,15 @@ aboutpage = tk.Frame(tab_main)
 tk.Label(aboutpage,text=f"易联坊启动器 \n{dVersion["type"]} {dVersion['releaseCode']}-{dVersion['betaCode'][0]}",font="SimHei 24").pack()
 tk.Label(aboutpage,text="启动器内核使用了 ConsoleMinecraftLauncher。").pack()
 tab_main.add(aboutpage,text="关于")
+
+# 公告提示
+def announcement():
+    try:
+        announcementInfo = requests.get("https://ruizesun.github.io/ResourcesForElfClient/announcement").text
+    except:
+        announcementInfo = "获取公告失败"
+    messagebox.showinfo("公告",announcementInfo)
+thread.start_new_thread(announcement,())
 
 # 内容变化
 def updateLocalLoginStatus(): # 本地游戏登录状态更新
