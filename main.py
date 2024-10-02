@@ -288,6 +288,7 @@ logging.info("初始化完成，正在加载图形界面。")
 window = tkinter.Tk()
 window.geometry("640x480")
 window.title("易联坊客户端")
+window.attributes('-alpha', 0.95)
 window.resizable(0,0)
 tab_main=tk.Notebook(window,width=624,height=432)
 tab_main.place(x=8,y=8)
@@ -315,8 +316,9 @@ tab_main.add(localpage,text="本地游玩")
 
 # 关于
 aboutpage = tk.Frame(tab_main)
-tk.Label(aboutpage,text=f"易联坊启动器 \n{dVersion["type"]} {dVersion['releaseCode']}-{dVersion['betaCode'][0]}",font="SimHei 24").pack()
+tk.Label(aboutpage,text=f"易联坊启动器 {dVersion["type"]} {dVersion['releaseCode']}-{dVersion['betaCode'][0]}",font="SimHei 20",).pack()
 tk.Label(aboutpage,text="启动器使用了 ConsoleMinecraftLauncher 作为内核。").pack()
+tk.Button(aboutpage,text="Github",command=lambda:os.system("start https://www.github.com/RuizeSun/Yilianfang/")).pack()
 tab_main.add(aboutpage,text="关于")
 
 # 公告提示
